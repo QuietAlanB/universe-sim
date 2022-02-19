@@ -159,7 +159,7 @@ def saveMap(name):
     # <Rcolor> <Gcolor> <Bcolor>
 
     try:
-        file = open(f"maps/{name}", "x", -1, "utf-8")
+        file = open(f"maps/{name}.bm", "x", -1, "utf-8")
         for body in bodies:
             file.write("BODY\n")
             file.write(f"{body.pos.x} {body.pos.y}\n")
@@ -174,7 +174,7 @@ def saveMap(name):
     
 def loadMap(name):
     try:
-        file = open(f"maps/{name}", "r", -1, "utf-8")
+        file = open(f"maps/{name}.bm", "r", -1, "utf-8")
         lines = file.readlines()
         continueAmount = 0
 
