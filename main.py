@@ -7,6 +7,7 @@ import enum
 
 pygame.init()
 
+# ================= celestial body class =================
 class CelestialBody:
     def __init__(self, pos, mass, velocity, radius = None, color = (255, 255, 255), showTrail = True):
         self.pos = pos
@@ -15,6 +16,8 @@ class CelestialBody:
         self.velocity = velocity
         self.color = color
         self.showTrail = showTrail
+        
+        
 
         if radius != None:
             self.radius = radius
@@ -30,15 +33,19 @@ class CelestialBody:
     def velocityUpdate(self, timeStep):
         for otherBody in bodies:
             if otherBody != self:
-                sqrDst = (otherBody.pos - self.pos).sqrMagnitude()
-                forceDir = (otherBody.pos - self.pos).normalized()
-                force = forceDir * G * self.mass * otherBody.mass / sqrDst
-                acc = force / self.mass
+                try:
+                    sqrDst = (otherBody.pos - self.pos).sqrMagnitude()
+                    forceDir = (otherBody.pos - self.pos).normalized()
+                    force = forceDir * G * self.mass * otherBody.mass / sqrDst
+                    acc = force / self.mass
 
-                if acc.magnitude() < attractionThreshold:
-                    continue
+                    if acc.magnitude() < attractionThreshold:
+                        continue
 
-                self.velocity += acc * timeStep
+                    self.velocity += acc * timeStep
+
+                except ZeroDivisionError:
+                    self.velocity = Vector2(0, 0)
 
     def positionUpdate(self, timeStep):
         self.lastPos = Vector2(self.pos.x, self.pos.y)
@@ -50,43 +57,10 @@ class CelestialBody:
                 continue
 
             if (abs(otherBody.pos - self.pos)).magnitude() < (otherBody.radius + self.radius):    
-                # ===== collision info =====
-                # high speed collisions between 2 objects would destroy both
-                # medium speed collisions would merge the 2 planets but lose material
-                # low speed collisions would merge the 2 planets and lose little material
+
+                # === low size, low vel ===
+
                 
-                # === high speed ===
-                if otherBody.velocity.magnitude() > 6.5 and self.velocity.magnitude() > 6.5:
-                    bodies.remove(otherBody)
-                    bodies.remove(self)
-
-                # === medium speed ===
-                elif otherBody.velocity.magnitude() > 4 and self.velocity.magnitude() > 4:
-                    newPos = (otherBody.pos - self.pos) + otherBody.pos
-                    newMass = int(min([otherBody.mass, self.mass]) / 1.5)
-                    newRadius = int(abs(otherBody.radius - self.radius) / 1.5)
-                    newColor = random.choice([otherBody.color, self.color])
-
-                    bodies.remove(otherBody)
-                    bodies.remove(self)
-                    addBody(newPos, newMass, Vector2(random.uniform(0.01, 1), random.uniform(0.01, 0.4)), newRadius, newColor)
-
-                # === low speed ===
-                elif otherBody.velocity.magnitude() > 2 and self.velocity.magnitude() > 2:
-                    newPos = (self.pos - otherBody.pos) + otherBody.pos
-                    newMass = int(min([otherBody.mass, self.mass]) / 1.2)
-                    newRadius = int(abs(otherBody.radius - self.radius) / 1.2)
-                    newColor = random.choice([otherBody.color, self.color])
-
-                    bodies.remove(otherBody)
-                    bodies.remove(self)
-                    addBody(newPos, newMass, Vector2(random.uniform(0.01, 0.4), random.uniform(0.01, 0.2)), newRadius, newColor)
-
-                # === anythign else ===
-                else:
-                    otherBody.mass += self.mass
-                    otherBody.radius += self.radius
-                    bodies.remove(self)
 
 
                 self.velocity /= 10
@@ -145,10 +119,45 @@ class Trail:
         gfxdraw.line(trailScreen, int(self.pos1.x), int(self.pos1.y), int(self.pos2.x), int(self.pos2.y), tuple(self.color))
 
 
+# ================= particle class =================
+class Particle:
+    def __init__(self, pos, color, size, velocity, lifetime):
+        self.pos = pos
+        self.color = color
+        self.size = size
+        self.velocity = velocity
+        self.lifetime = lifetime * framerate
+
+        self.loseAmount = self.color[3] / self.lifetime
+
+    def posUpdate(self):
+        self.pos += self.velocity
+
+    def lifeUpdate(self):
+        self.color[3] -= self.loseAmount
+        self.lifetime -= 1
+
+        if self.lifetime <= 0:
+            particles.remove(self)
+
+    def drawUpdate(self):
+        gfxdraw.aacircle(screen, int(self.pos.x), int(self.pos.y), self.size, self.color)
+        gfxdraw.filled_circle(screen, int(self.pos.x), int(self.pos.y), self.size, self.color)
+
+    def update(self):
+        self.posUpdate()
+        self.lifeUpdate()
+
+
 # ======== functions and other stuff =========
+def addParticle(pos, color, size, velocity, lifetime):
+    particles.append(Particle(pos, color, size, velocity, lifetime))
+
 def addBody(pos, mass, velocity, radius, color):
     bodies.append(CelestialBody(pos, mass, velocity, radius, color))
 
+
+# ===== save maps ======
 def saveMap(name):
     # file format:
     # BODY
@@ -160,6 +169,8 @@ def saveMap(name):
 
     try:
         file = open(f"maps/{name}.bm", "x", -1, "utf-8")
+
+        # ===== celestial bodies =====
         for body in bodies:
             file.write("BODY\n")
             file.write(f"{body.pos.x} {body.pos.y}\n")
@@ -172,6 +183,8 @@ def saveMap(name):
     except FileExistsError:
         raise FileExistsError("The map name already exists")
     
+
+# ===== load maps ======
 def loadMap(name):
     try:
         file = open(f"maps/{name}.bm", "r", -1, "utf-8")
@@ -185,6 +198,7 @@ def loadMap(name):
 
             lines[i] = lines[i].strip("\n")
 
+            # ===== celestial bodies =====
             if lines[i] == "BODY":
                 pos = Vector2(int(lines[i + 1].split(" ")[0]), int(lines[i + 1].split(" ")[1]))
                 mass = int(lines[i + 2])
@@ -196,6 +210,7 @@ def loadMap(name):
 
     except FileNotFoundError:
         raise FileNotFoundError("That map name does not exist")
+
 
 # ======== pygame variables ========
 running = True
@@ -223,9 +238,33 @@ scrollSpeed = 10
 defaultScrollSpeed = scrollSpeed
 
 # === threshold ===
-attractionThreshold = 0.0009
+attractionThreshold = 0.0015
 
-loadMap("solarSys_small")
+# === particles ===
+particles = []
+
+# === size related vars ===
+sizeThresholds = {
+    "small": 0,
+    "medium": 0,
+    "large": 0,
+    "very large": 0
+}
+
+velThresholds = {
+    "small": 0,
+    "medium": 0,
+    "large": 0,
+    "very large": 0
+}
+
+# solar system 1
+addBody(Vector2(600, 600), 20000, Vector2(0, 0), 20, (255, 0, 0))
+addBody(Vector2(1000, 600), 20, Vector2(0, 7), 5, (0, 200, 125))
+
+# solar system 2
+addBody(Vector2(4000, 600), 20000, Vector2(-0.5, 0), 20, (255, 0, 255))
+addBody(Vector2(3600, 600), 15, Vector2(0, -5), 5, (255, 125, 0))
 
 # ======== main loop ========
 while running:
@@ -243,9 +282,9 @@ while running:
     trailScreen.fill((0, 0, 0, 0))
     screen.fill((0, 0, 0))
 
-    # ===== trail updates =====
+
+    # ======= trail updates =======
     for trail in trails:
-        # ===== moving controls =====
         if pressed[pygame.K_w]: 
             trail.pos1.y += scrollSpeed
             trail.pos2.y += scrollSpeed
@@ -259,18 +298,16 @@ while running:
             trail.pos1.x -= scrollSpeed
             trail.pos2.x -= scrollSpeed
 
-        # ===== fade out effect for trails =====
         trail.fadeOut()
         trail.update()
 
 
-    # ===== body updates =====
+    # ======= body updates =======
     for body in bodies:
         if body.pos.x > maxDistance or body.pos.y > maxDistance or body.pos.x < -maxDistance or body.pos.y < -maxDistance:
             bodies.remove(body)
             continue
 
-        # ===== moving controls =====
         if pressed[pygame.K_w]:
             body.pos.y += scrollSpeed
             body.lastPos.y += scrollSpeed
@@ -290,6 +327,17 @@ while running:
         body.fixedUpdate()
         body.collisionUpdate()
         body.drawUpdate()
+
+
+    # ======= particle updates =======
+    for particle in particles:
+        if pressed[pygame.K_w]: particle.pos.y += scrollSpeed
+        if pressed[pygame.K_a]: particle.pos.x += scrollSpeed
+        if pressed[pygame.K_s]: particle.pos.y -= scrollSpeed
+        if pressed[pygame.K_d]: particle.pos.x -= scrollSpeed
+
+        particle.update()
+        particle.drawUpdate()
 
     screen.blit(trailScreen, (0, 0))
 
