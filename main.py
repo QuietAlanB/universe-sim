@@ -16,8 +16,6 @@ class CelestialBody:
         self.velocity = velocity
         self.color = color
         self.showTrail = showTrail
-        
-        
 
         if radius != None:
             self.radius = radius
@@ -56,15 +54,55 @@ class CelestialBody:
             if otherBody == self:
                 continue
 
-            if (abs(otherBody.pos - self.pos)).magnitude() < (otherBody.radius + self.radius):    
+            if (abs(otherBody.pos - self.pos)).magnitude() < (otherBody.radius + self.radius):  
+                collidePos = (otherBody.pos - self.pos) / 2 + otherBody.pos
 
-                # === low size, low vel ===
+                print(abs(self.velocity) >= velThresholds["very large"])
+                print(abs(self.velocity))
+                print(velThresholds["very large"])
 
-                
+                # === very large vel ===
+                if abs(self.velocity) >= velThresholds["very large"] or abs(otherBody.velocity) >= velThresholds["very large"]:
+                    for i in range(60):
+                        col = [random.choice([otherBody.color[0], self.color[0]]), random.choice([otherBody.color[1], self.color[1]]), random.choice([otherBody.color[2], self.color[2]]), 255]
+                        vel = Vector2(random.uniform(-8.1, 8.1), random.uniform(-8.1, 8.1))
+                        addParticle(collidePos, col, particleSize, vel, particleLifetime)
+
+                    bodies.remove(self)
+                    bodies.remove(otherBody)
 
 
-                self.velocity /= 10
+                # === large vel ===
+                elif abs(self.velocity) >= velThresholds["large"] or abs(otherBody.velocity) >= velThresholds["large"]:
+                    for i in range(40):
+                        col = [random.choice([otherBody.color[0], self.color[0]]), random.choice([otherBody.color[1], self.color[1]]), random.choice([otherBody.color[2], self.color[2]]), 255]
+                        vel = Vector2(random.uniform(-6.6, 6.6), random.uniform(-6.6, 6.6))
+                        addParticle(collidePos, col, particleSize, vel, particleLifetime)
 
+                    bodies.remove(self)
+                    bodies.remove(otherBody)
+
+
+                # === med vel ===
+                elif abs(self.velocity) >= velThresholds["medium"] or abs(otherBody.velocity) >= velThresholds["medium"]:
+                    for i in range(30):
+                        col = [random.choice([otherBody.color[0], self.color[0]]), random.choice([otherBody.color[1], self.color[1]]), random.choice([otherBody.color[2], self.color[2]]), 255]
+                        vel = Vector2(random.uniform(-4.1, 4.1), random.uniform(-4.1, 4.1))
+                        addParticle(collidePos, col, particleSize, vel, particleLifetime)
+
+                    bodies.remove(self)
+                    bodies.remove(otherBody)
+
+
+                # === small vel ===
+                elif abs(self.velocity) < velThresholds["medium"] or abs(otherBody.velocity) < velThresholds["medium"]:
+                    for i in range(20):
+                        col = [random.choice([otherBody.color[0], self.color[0]]), random.choice([otherBody.color[1], self.color[1]]), random.choice([otherBody.color[2], self.color[2]]), 255]
+                        vel = Vector2(random.uniform(-1.6, 1.6), random.uniform(-1.6, 1.6))
+                        addParticle(collidePos, col, particleSize, vel, particleLifetime)
+
+                    bodies.remove(self)
+                    bodies.remove(otherBody)
 
     def fixedUpdate(self):
         self.velocityUpdate(timeStep)
@@ -130,23 +168,19 @@ class Particle:
 
         self.loseAmount = self.color[3] / self.lifetime
 
-    def posUpdate(self):
-        self.pos += self.velocity
-
-    def lifeUpdate(self):
-        self.color[3] -= self.loseAmount
-        self.lifetime -= 1
-
-        if self.lifetime <= 0:
-            particles.remove(self)
 
     def drawUpdate(self):
-        gfxdraw.aacircle(screen, int(self.pos.x), int(self.pos.y), self.size, self.color)
-        gfxdraw.filled_circle(screen, int(self.pos.x), int(self.pos.y), self.size, self.color)
+        if self.color[3] < 1:
+            particles.remove(self)
+            return
+
+        gfxdraw.aacircle(screen, int(self.pos.x), int(self.pos.y), self.size, tuple(self.color))
+        gfxdraw.filled_circle(screen, int(self.pos.x), int(self.pos.y), self.size, tuple(self.color))
+
 
     def update(self):
-        self.posUpdate()
-        self.lifeUpdate()
+        self.pos += self.velocity
+        self.color[3] -= self.loseAmount
 
 
 # ======== functions and other stuff =========
@@ -169,6 +203,7 @@ def saveMap(name):
 
     try:
         file = open(f"maps/{name}.bm", "x", -1, "utf-8")
+        bodyCount = 0
 
         # ===== celestial bodies =====
         for body in bodies:
@@ -178,7 +213,10 @@ def saveMap(name):
             file.write(f"{body.velocity.x} {body.velocity.y}\n")
             file.write(f"{body.radius}\n")
             file.write(f"{body.color[0]} {body.color[1]} {body.color[2]}\n")
+            bodyCount += 1
         file.close()
+
+        print(f"saved map with {bodyCount} bodies")
 
     except FileExistsError:
         raise FileExistsError("The map name already exists")
@@ -200,12 +238,13 @@ def loadMap(name):
 
             # ===== celestial bodies =====
             if lines[i] == "BODY":
-                pos = Vector2(int(lines[i + 1].split(" ")[0]), int(lines[i + 1].split(" ")[1]))
-                mass = int(lines[i + 2])
-                velocity = Vector2(int(lines[i + 3].split(" ")[0]), int(lines[i + 3].split(" ")[1]))
+                pos = Vector2(float(lines[i + 1].split(" ")[0]), float(lines[i + 1].split(" ")[1]))
+                mass = float(lines[i + 2])
+                velocity = Vector2(float(lines[i + 3].split(" ")[0]), float(lines[i + 3].split(" ")[1]))
                 radius = int(lines[i + 4])
                 color = ( int(lines[i + 5].split(" ")[0]), int(lines[i + 5].split(" ")[1]), int(lines[i + 5].split(" ")[2]) )
                 addBody(pos, mass, velocity, radius, color)
+                print(f"loaded body (pos: {pos}, mass: {mass}, radius: {radius})")
                 continueAmount = 5
 
     except FileNotFoundError:
@@ -219,6 +258,7 @@ clock = pygame.time.Clock()
 screenSize = Vector2(1900, 1000)
 screen = pygame.display.set_mode((screenSize.x, screenSize.y))
 trailScreen = pygame.Surface((screenSize.x, screenSize.y), pygame.SRCALPHA)
+ticks = 0
 
 
 # ======== other variables ========
@@ -242,29 +282,18 @@ attractionThreshold = 0.0015
 
 # === particles ===
 particles = []
+particleSize = 3
+particleLifetime = 3
 
-# === size related vars ===
-sizeThresholds = {
-    "small": 0,
-    "medium": 0,
-    "large": 0,
-    "very large": 0
-}
-
+# anything < medium will be considered small
+# the rest is >=
 velThresholds = {
-    "small": 0,
-    "medium": 0,
-    "large": 0,
-    "very large": 0
+    "medium": Vector2(4, 4),
+    "large": Vector2(7, 7),
+    "very large": Vector2(12, 12)
 }
 
-# solar system 1
-addBody(Vector2(600, 600), 20000, Vector2(0, 0), 20, (255, 0, 0))
-addBody(Vector2(1000, 600), 20, Vector2(0, 7), 5, (0, 200, 125))
-
-# solar system 2
-addBody(Vector2(4000, 600), 20000, Vector2(-0.5, 0), 20, (255, 0, 255))
-addBody(Vector2(3600, 600), 15, Vector2(0, -5), 5, (255, 125, 0))
+loadMap("solarSys_small")
 
 # ======== main loop ========
 while running:
@@ -336,10 +365,11 @@ while running:
         if pressed[pygame.K_s]: particle.pos.y -= scrollSpeed
         if pressed[pygame.K_d]: particle.pos.x -= scrollSpeed
 
-        particle.update()
         particle.drawUpdate()
+        particle.update()
 
     screen.blit(trailScreen, (0, 0))
 
     pygame.display.update()
     clock.tick(framerate)
+    ticks += 1

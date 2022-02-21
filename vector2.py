@@ -41,6 +41,57 @@ class Vector2:
     def __abs__(self):
         return Vector2(abs(self.x), abs(self.y))
 
+
+    # ==
+    def __eq__(self, other):
+        try:
+            if self.x == other.x and self.y == other.y:
+                return True
+            return False
+        except:
+            raise TypeError(f"'==' not supported between instances of 'Vector2' and '{type(other).__name__}'")
+
+
+    # >=
+    def __ge__(self, other):
+        try:
+            if self.x >= other.x or self.y >= other.y:
+                return True
+            return False
+        except:
+            raise TypeError(f"'>=' not supported between instances of 'Vector2' and '{type(other).__name__}'")
+
+
+    # >
+    def __gt__(self, other):
+        try:
+            if self.x > other.x or self.y > other.y:
+                return True
+            return False
+        except:
+            raise TypeError(f"'>' not supported between instances of 'Vector2' and '{type(other).__name__}'")
+
+
+    # <=
+    def __le__(self, other):
+        try:
+            if self.x <= other.x or self.y <= other.y:
+                return True
+            return False
+        except:
+            raise TypeError(f"'<=' not supported between instances of 'Vector2' and '{type(other).__name__}'")
+
+
+    # <
+    def __lt__(self, other):
+        try:
+            if self.x < other.x or self.y < other.y:
+                return True
+            return False
+        except:
+            raise TypeError(f"'<' not supported between instances of 'Vector2' and '{type(other).__name__}'")
+
+
     def dot(self, other):
         return self.x * other.x + self.y * other.y
 
