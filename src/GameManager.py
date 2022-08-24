@@ -11,7 +11,8 @@ class GameManager:
                 self.objects = []
                 self.options = {
                         "GravConst": 1, # gravitational constant. used for increasing/decreasing gravitational force
-                        "AttractionThreshold": 0.001 # makes it so that attraction isn't applied on objects which are far
+                        "AttractionThreshold": 0.001, # makes it so that attraction isn't applied on objects which are far
+                        "ScrollSpeed": 5 # how fast you can scroll using movement keys (WASD)
                 }
 
 
@@ -26,6 +27,19 @@ class GameManager:
         def Explode(self, body):
                 randVector = Vector2(random.uniform(-4.1, 4.1), random.uniform(-4.1, 4.1))
                 self.AddObject(Particle(body.pos, 3, body.color, randVector))
+
+
+        def Scroll(self, dir):
+                dir *= self.options["ScrollSpeed"]
+
+                for object in self.objects:
+                        # special edge case for trails
+                        if (type(object) == Trail):
+                                object.pointA += dir
+                                object.pointB += dir
+                                continue
+
+                        object.pos += dir
 
 
         def PhysicsUpdate(self):
@@ -45,9 +59,8 @@ class GameManager:
 
 
                         if (type(object) == Trail or type(object) == Particle):
-                                removeTrail = object.PhysicsUpdate()
-                                
-                                if (removeTrail):
+                                removeObj = object.PhysicsUpdate()
+                                if (removeObj):
                                         self.RemoveObject(object)
 
 

@@ -31,6 +31,13 @@ while running:
                 if (event.type == pygame.QUIT):
                         running = False
 
+        pressed = pygame.key.get_pressed()
+
+        if (pressed[pygame.K_w]): gm.Scroll(Vector2(0, 1))
+        if (pressed[pygame.K_s]): gm.Scroll(Vector2(0, -1))
+        if (pressed[pygame.K_a]): gm.Scroll(Vector2(1, 0))
+        if (pressed[pygame.K_d]): gm.Scroll(Vector2(-1, 0))
+
         gm.PhysicsUpdate()
         gm.DrawUpdate()
         clock.tick(60)
