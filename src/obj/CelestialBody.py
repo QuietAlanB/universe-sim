@@ -9,8 +9,11 @@ class CelestialBody:
                 self.color = color
                 self.velocity = startVelocity
 
+                self.prevPos = self.pos
+
 
         def PhysicsUpdate(self, objects, options):
+                self.prevPos = self.pos
                 G = options["GravConst"]
                 attractionThreshold = options["AttractionThreshold"]
                 bodiesToRemove = []
@@ -54,7 +57,6 @@ class CelestialBody:
                 if (distance < self.radius + body.radius):
                         return True
                 return False
-
 
 
         def DrawUpdate(self, screen):
