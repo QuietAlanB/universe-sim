@@ -1,5 +1,8 @@
 import pygame
+import random
+from vector2 import *
 from obj.CelestialBody import CelestialBody
+from obj.Particle import Particle
 from obj.Trail import Trail
 
 class GameManager:
@@ -8,7 +11,7 @@ class GameManager:
                 self.objects = []
                 self.options = {
                         "GravConst": 1, # gravitational constant. used for increasing/decreasing gravitational force
-                        "AttractionThreshold": 0.01 # makes it so that attraction isn't applied on objects which are far
+                        "AttractionThreshold": 0.001 # makes it so that attraction isn't applied on objects which are far
                 }
 
 
@@ -18,6 +21,11 @@ class GameManager:
 
         def RemoveObject(self, object):
                 self.objects.remove(object)
+
+
+        def Explode(self, body):
+                randVector = Vector2(random.uniform(-4.1, 4.1), random.uniform(-4.1, 4.1))
+                self.AddObject(Particle(body.pos, 3, body.color, randVector))
 
 
         def PhysicsUpdate(self):
@@ -32,7 +40,11 @@ class GameManager:
                                         for body in bodiesToRemove:
                                                 self.RemoveObject(body)
 
-                        if (type(object) == Trail):
+                                                for i in range(10):
+                                                        self.Explode(body)
+
+
+                        if (type(object) == Trail or type(object) == Particle):
                                 removeTrail = object.PhysicsUpdate()
                                 
                                 if (removeTrail):

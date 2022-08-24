@@ -1,16 +1,18 @@
 from pygame import gfxdraw
 
-class Trail:
-        def __init__(self, pointA, pointB, color):
+class Particle:
+        def __init__(self, pos, radius, color, vel):
+                self.pos = pos
+                self.radius = radius
                 self.color = color
-                self.pointA = pointA
-                self.pointB = pointB
+                self.vel = vel
 
-                self.lifetime = 60
+                self.lifetime = 180
                 self.colorSubtract = 255 / self.lifetime
 
-
+        
         def PhysicsUpdate(self):
+                self.pos += self.vel
                 self.lifetime -= 1
 
                 self.color = [
@@ -24,16 +26,16 @@ class Trail:
                         if (self.color[i] < 0):
                                 self.color[i] = 0
 
-                # check if trail is invisible, and return True so the gamemanager can remove it
+                # check if particle is invisible, and return True so the gamemanager can remove it
                 if (self.lifetime == 0):
                         return True
                 return False
 
 
         def DrawUpdate(self, screen):
-                gfxdraw.line(
+                gfxdraw.circle(
                         screen, 
-                        int(self.pointA.x), int(self.pointA.y), 
-                        int(self.pointB.x), int(self.pointB.y), 
+                        int(self.pos.x), int(self.pos.y), 
+                        int(self.radius), 
                         (int(self.color[0]), int(self.color[1]), int(self.color[2]))
                 )
