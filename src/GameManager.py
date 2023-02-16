@@ -1,5 +1,6 @@
 import pygame
 import random
+import copy
 from vector2 import *
 from obj.CelestialBody import CelestialBody
 from obj.Particle import Particle
@@ -9,6 +10,7 @@ class GameManager:
         def __init__(self):
                 self.screen = pygame.display.set_mode((900, 900))
                 self.objects = []
+                self.cameraPos = Vector2(0, 0)
                 self.options = {
                         "GravConst": 1, # gravitational constant. used for increasing/decreasing gravitational force
                         "AttractionThreshold": 0.001, # makes it so that attraction isn't applied on objects which are far
@@ -30,16 +32,7 @@ class GameManager:
 
 
         def Scroll(self, dir):
-                dir *= self.options["ScrollSpeed"]
-
-                for object in self.objects:
-                        # special edge case for trails
-                        if (type(object) == Trail):
-                                object.pointA += dir
-                                object.pointB += dir
-                                continue
-
-                        object.pos += dir
+                self.cameraPos += dir
 
 
         def PhysicsUpdate(self):
@@ -68,6 +61,14 @@ class GameManager:
                 self.screen.fill((0, 0, 0))
                 
                 for object in self.objects:
-                        object.DrawUpdate(self.screen)
+                        objectCopy = copy.deepcopy(object)
+                        
+                        if (type(object) != Trail):
+                                objectCopy.pos += self.cameraPos
+                        else:
+                                objectCopy.pointA += self.cameraPos
+                                objectCopy.pointB += self.cameraPos
+
+                        objectCopy.DrawUpdate(self.screen)
 
                 pygame.display.update()
